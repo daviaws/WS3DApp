@@ -2,29 +2,41 @@ package WS3DApp;
 
 import java.awt.KeyboardFocusManager;
 import java.awt.event.KeyEvent;
+import java.awt.Color;
+import java.awt.Component;
 import javax.swing.*;
 import ws3dproxy.WS3DProxy;
+import ws3dproxy.model.Bag;
 import ws3dproxy.model.Creature;
 import ws3dproxy.model.Thing;
 import ws3dproxy.model.World;
+import ws3dproxy.util.Constants;
 
 public class ControlFrame extends JFrame {
+    private static final double CAPTURE_DISTANCE = 25.0;
+    private int highlightedIndex = -1;
 
     private WS3DProxy proxy;
     private World world;
     private Creature creature;
 
     // UI
-    private JButton btnUp, btnDown, btnLeft, btnRight, btnStop;
+    private JButton btnUp, btnDown, btnLeft, btnRight, btnCapture;
     private JList<String> visionList;
     private DefaultListModel<String> visionModel;
     private JScrollPane visionScroll;
     private Timer visionTimer;
+    private DefaultListModel<String> bagModel;
+    private JList<String> bagList;
+    private JScrollPane bagScroll;
+    private Timer bagTimer;
 
     public ControlFrame(WS3DProxy proxy) {
         this.proxy = proxy;
 
         initVisionPanel();
+
+        initBagPanel();
 
         initComponents();
 
@@ -36,9 +48,11 @@ public class ControlFrame extends JFrame {
 
         startVisionTimer();
 
+        startBagTimer();
+
         // Janela
         setTitle("WS3D Control");
-        setSize(400, 200);
+        setSize(620, 300);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setVisible(true);
@@ -53,19 +67,19 @@ public class ControlFrame extends JFrame {
         btnDown = new JButton("↓");
         btnLeft = new JButton("←");
         btnRight = new JButton("→");
-        btnStop = new JButton("STOP");
+        btnCapture = new JButton("CAPTURE");
 
         btnUp.setFocusable(false);
         btnDown.setFocusable(false);
         btnLeft.setFocusable(false);
         btnRight.setFocusable(false);
-        btnStop.setFocusable(false);
+        btnCapture.setFocusable(false);
 
         btnUp.addActionListener(e -> moveUp());
         btnDown.addActionListener(e -> moveDown());
         btnLeft.addActionListener(e -> moveLeft());
         btnRight.addActionListener(e -> moveRight());
-        btnStop.addActionListener(e -> stop());
+        btnCapture.addActionListener(e -> stopAndCapture());
 
         // Painel de controle (esquerda)
         JPanel controlPanel = new JPanel();
@@ -79,7 +93,7 @@ public class ControlFrame extends JFrame {
                     gl.createSequentialGroup()
                         .addComponent(btnLeft)
                         .addGap(10)
-                        .addComponent(btnStop)
+                        .addComponent(btnCapture)
                         .addGap(10)
                         .addComponent(btnRight)
                 )
@@ -94,7 +108,7 @@ public class ControlFrame extends JFrame {
                 .addGroup(
                     gl.createParallelGroup(GroupLayout.Alignment.BASELINE)
                         .addComponent(btnLeft)
-                        .addComponent(btnStop)
+                        .addComponent(btnCapture)
                         .addComponent(btnRight)
                 )
                 .addGap(15)
@@ -103,15 +117,20 @@ public class ControlFrame extends JFrame {
         );
 
         // SplitPane
-        JSplitPane split = new JSplitPane(
+        JSplitPane rightSplit = new JSplitPane(
+            JSplitPane.HORIZONTAL_SPLIT,
+            visionScroll,
+            bagScroll
+        );
+        rightSplit.setResizeWeight(0.6);
+
+        JSplitPane mainSplit = new JSplitPane(
             JSplitPane.HORIZONTAL_SPLIT,
             controlPanel,
-            visionScroll
+            rightSplit
         );
-        split.setResizeWeight(0.4);
-        split.setDividerLocation(200);
 
-        setContentPane(split);
+        setContentPane(mainSplit);
     }
 
     private void initVisionPanel() {
@@ -122,6 +141,45 @@ public class ControlFrame extends JFrame {
             BorderFactory.createTitledBorder("Things in Vision")
         );
         visionScroll = new JScrollPane(visionList);
+
+        visionList.setCellRenderer(new DefaultListCellRenderer() {
+
+            @Override
+            public Component getListCellRendererComponent(
+                    JList<?> list,
+                    Object value,
+                    int index,
+                    boolean isSelected,
+                    boolean cellHasFocus) {
+
+                JLabel label = (JLabel) super.getListCellRendererComponent(
+                        list, value, index, isSelected, cellHasFocus);
+
+                label.setBackground(Color.WHITE);
+                label.setForeground(Color.BLACK);
+
+                if (index == highlightedIndex) {
+                    label.setBackground(Color.YELLOW);
+                    label.setForeground(Color.BLACK);
+                }
+
+                if (isSelected) {
+                    label.setBackground(label.getBackground().darker());
+                }
+
+                return label;
+            }
+        });
+    }
+
+    private void initBagPanel() {
+        bagModel = new DefaultListModel<>();
+        bagList = new JList<>(bagModel);
+        bagList.setFocusable(false);
+        bagList.setBorder(
+            BorderFactory.createTitledBorder("Bag")
+        );
+        bagScroll = new JScrollPane(bagList);
     }
 
     /* ========================= WORLD ========================= */
@@ -166,9 +224,26 @@ public class ControlFrame extends JFrame {
         catch (Exception e) { e.printStackTrace(); }
     }
 
-    private void stop() {
+    private void stopAndCapture() {
         try { creature.move(0, 0, creature.getPitch()); }
         catch (Exception e) { e.printStackTrace(); }
+        captureNearest();
+    }
+
+    private void captureNearest() {
+        try {
+            for (Thing t : creature.getThingsInVision()) {
+                if (t.getName().startsWith("Brick")) {
+                    continue;
+                }
+                if (creature.calculateDistanceTo(t) <= CAPTURE_DISTANCE) {
+                    creature.putInSack(t.getName());
+                    return;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     /* ========================= KEYBOARD (GLOBAL, SEM FOCO) ========================= */
@@ -185,7 +260,7 @@ public class ControlFrame extends JFrame {
                     case KeyEvent.VK_DOWN -> moveDown();
                     case KeyEvent.VK_LEFT -> moveLeft();
                     case KeyEvent.VK_RIGHT -> moveRight();
-                    case KeyEvent.VK_SPACE -> stop();
+                    case KeyEvent.VK_SPACE -> stopAndCapture();
                 }
                 return false; // não consome
             });
@@ -194,7 +269,7 @@ public class ControlFrame extends JFrame {
     /* ========================= VISION ========================= */
 
     private void startVisionTimer() {
-        visionTimer = new Timer(500, e -> updateVision());
+        visionTimer = new Timer(250, e -> updateVision());
         visionTimer.start();
     }
 
@@ -204,22 +279,74 @@ public class ControlFrame extends JFrame {
         try {
             creature.updateState();
             visionModel.clear();
+            highlightedIndex = -1;
+
+            int index = 0;
 
             for (Thing t : creature.getThingsInVision()) {
                 var p = t.getCenterPosition();
+                double dist = creature.calculateDistanceTo(t);
+
                 visionModel.addElement(
                     String.format(
-                        "%s (%.1f, %.1f)",
+                        "%s (%.1f, %.1f)  d: %.1f",
                         t.getName(),
                         p.getX(),
-                        p.getY()
+                        p.getY(),
+                        dist
                     )
                 );
+
+                if (t.getName().startsWith("Brick")) {
+                    continue;
+                }
+
+                if (highlightedIndex == -1
+                    && dist <= CAPTURE_DISTANCE
+                    && !t.getName().startsWith("Brick")) {
+                    highlightedIndex = index;
+                }
+
+                index++;
             }
+
+            visionList.repaint();
 
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    /* ========================= BAG ========================= */
+    private void updateBag() {
+        if (creature == null) return;
+
+        try {
+            Bag bag = creature.updateBag();
+            if (bag == null) return;
+
+            bagModel.clear();
+
+            bagModel.addElement("Food total: " + bag.getTotalNumberFood());
+            bagModel.addElement("  Perishable: " + bag.getNumberPFood());
+            bagModel.addElement("  Non-perishable: " + bag.getNumberNPFood());
+
+            bagModel.addElement("Crystals total: " + bag.getTotalNumberCrystals());
+            bagModel.addElement("  RED: " + bag.getNumberCrystalPerType(Constants.colorRED));
+            bagModel.addElement("  GREEN: " + bag.getNumberCrystalPerType(Constants.colorGREEN));
+            bagModel.addElement("  BLUE: " + bag.getNumberCrystalPerType(Constants.colorBLUE));
+            bagModel.addElement("  YELLOW: " + bag.getNumberCrystalPerType(Constants.colorYELLOW));
+            bagModel.addElement("  MAGENTA: " + bag.getNumberCrystalPerType(Constants.colorMAGENTA));
+            bagModel.addElement("  WHITE: " + bag.getNumberCrystalPerType(Constants.colorWHITE));
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void startBagTimer() {
+        bagTimer = new Timer(500, e -> updateBag());
+        bagTimer.start();
     }
 
     private void setupTooltips() {
@@ -231,6 +358,6 @@ public class ControlFrame extends JFrame {
         btnDown.setToolTipText("Move backward (↓)");
         btnLeft.setToolTipText("Rotate left (←)");
         btnRight.setToolTipText("Rotate right (→)");
-        btnStop.setToolTipText("Stop (SPACE)");
+        btnCapture.setToolTipText("Capture (SPACE)");
     }
 }

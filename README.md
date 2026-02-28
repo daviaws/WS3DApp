@@ -28,3 +28,16 @@ docker compose up
 - Display of the visible objects in the graphical interface as a dynamic list, updated periodically during execution.
 - Each visible object is presented with its **name** and **spatial position (x, y)**, based on the object’s center of mass.
 - The visualization is integrated into the control interface, allowing the user to monitor the creature’s perception of the environment while manually controlling its movement.
+- Objects that are within a predefined capture distance are visually identified.
+- Only the first object that is close enough to be captured is highlighted in yellow.
+- Visualization of the creature’s Bag (inventory) in the interface.
+- The Bag view shows, in real time:
+- Total amount of food.
+- Amount of perishable and non-perishable food.
+- Total number of crystals.
+- Number of crystals per color.
+- The Bag visualization is periodically updated using the **updateBag()** method of the Creature class.
+- The Bag view always reflects the current internal state of the creature.
+- The capture of objects is not automatic.
+- Placing a Thing into the Bag must be explicitly triggered by the program logic or user action.
+- Bricks cannot be captured nor highlighted at all.
