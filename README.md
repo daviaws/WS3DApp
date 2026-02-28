@@ -40,6 +40,6 @@ docker compose up
 - The Bag view always reflects the current internal state of the creature.
 - The capture of objects is not automatic.
 - Placing a Thing into the Bag must be explicitly triggered by the program logic or user action.
-- Bricks cannot be captured nor highlighted at all.
+- Bricks and DeliverySpots cannot be captured nor highlighted at all.
 - Food cannot be captured as WS3D have the resource but the Proxy don't work well with food in backpack.
 - Food can be highlighted and eat with E button or in the interface.

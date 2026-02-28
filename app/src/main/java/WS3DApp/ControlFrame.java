@@ -210,6 +210,7 @@ public class ControlFrame extends JFrame {
             World.createFood(0, 100, 220);
             World.createJewel(0, 10, 50);
             World.createBrick(3, 500, 200, 505, 300);
+            World.createDeliverySpot(250, 250);
 
             creature = proxy.createCreature(100, 450, 0);
             creature.start();
@@ -250,7 +251,10 @@ public class ControlFrame extends JFrame {
     private void captureNearest() {
         try {
             for (Thing t : creature.getThingsInVision()) {
-                if (t.getName().startsWith("Brick") || t.getName().contains("Food")) {
+                if (t.getName().startsWith("Brick") 
+                    || t.getName().contains("Food")
+                    || t.getName().startsWith("Delivery")) {
+
                     continue;
                 }
                 if (creature.calculateDistanceTo(t) <= CAPTURE_DISTANCE) {
@@ -352,7 +356,8 @@ public class ControlFrame extends JFrame {
 
                 if (highlightedIndex == -1
                     && dist <= CAPTURE_DISTANCE
-                    && !t.getName().startsWith("Brick")) {
+                    && !t.getName().startsWith("Brick")
+                    && !t.getName().startsWith("Delivery")) {
                     highlightedIndex = index;
                 }
 
