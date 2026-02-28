@@ -12,59 +12,65 @@ import ws3dproxy.model.WorldPoint;
 
 public class App {
     
-    public Creature c;
-    public World w;
-    public int width;
-    public int height;
-    
+    public WS3DProxy proxy;
+    public ControlFrame cf;
+
     public String getGreeting() {
         return("Greetings...");
     }
     
     public App() {
-        WS3DProxy proxy = new WS3DProxy();
-        try {   
-            w = World.getInstance();
-            width = w.getEnvironmentWidth();
-            height = w.getEnvironmentHeight();
+        proxy = new WS3DProxy();
+        // try {   
+            // World world = World.getInstance();
+            // world.reset();
+        //     w = World.getInstance();
+        //     width = w.getEnvironmentWidth();
+        //     height = w.getEnvironmentHeight();
             
-            w.reset();
-            World.createFood(0, 350, 75);
-            World.createFood(0, 100, 220);
-            World.createFood(1, 250, 210);
-            World.createDeliverySpot(250, 250);
-            World.createJewel(0, 10, 50);
-            World.createJewel(1, 100, 500);
-            World.createBrick(3, 500, 200, 505, 300);
-            c = proxy.createCreature(100,450,0);
-            c.start();
+        //     w.reset();
+        //     World.createFood(0, 350, 75);
+        //     World.createFood(0, 100, 220);
+        //     World.createFood(1, 250, 210);
+        //     World.createDeliverySpot(250, 250);
+        //     World.createJewel(0, 10, 50);
+        //     World.createJewel(1, 100, 500);
+        //     World.createBrick(3, 500, 200, 505, 300);
+        //     c = proxy.createCreature(100,450,0);
+        //     c.start();
+
+        //     // c2 = proxy.createCreature(50,250,0,1);
+        //     // c2.start();
             
-        } catch (Exception e) {
-            System.out.println("Erro capturado"); 
-        }
+        // } catch (Exception e) {
+        //     System.out.println("Erro capturado"); 
+        // }
+        cf = new ControlFrame(proxy);
+        cf.setVisible(true);
     }
             
 
     public static void main(String[] args) {
         Random r = new Random();
         App app = new App();
-        try {
-            while(true) {
-                app.c.moveto(4, r.nextInt(app.width),r.nextInt(app.height));
-                Thread.sleep(5000);
-                WorldPoint position = app.c.getPosition();
-                double pitch = app.c.getPitch();
-                double fuel = app.c.getFuel();
-                System.out.println("Creature is at "+position+" with pitch "+pitch+" and fuel "+fuel);
-                app.c.updateState();
-                System.out.print("It can see the following from here: ");
-                for (Thing t : app.c.getThingsInVision()) {
-                    System.out.print(" "+t.getName());
-                }
-                System.out.println("");
-            }
-        } catch (Exception e) {
-            System.out.println("Erro capturado"); 
-        }
+        
+        // try {
+        //     while(true) {
+        //         app.c.moveto(4, r.nextInt(app.width),r.nextInt(app.height));
+        //         Thread.sleep(5000);
+        //         WorldPoint position = app.c.getPosition();
+        //         double pitch = app.c.getPitch();
+        //         double fuel = app.c.getFuel();
+        //         System.out.println("Creature is at "+position+" with pitch "+pitch+" and fuel "+fuel);
+        //         app.c.updateState();
+        //         System.out.print("It can see the following from here: ");
+        //         for (Thing t : app.c.getThingsInVision()) {
+        //             System.out.print(" "+t.getName());
+        //         }
+        //         System.out.println("");
+        //     }
+        // } catch (Exception e) {
+        //     System.out.println("Erro capturado"); 
+        // }
     }
 }

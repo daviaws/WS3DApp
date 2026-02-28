@@ -24,7 +24,7 @@ dependencies {
 
     // This dependency is used by the application.
     implementation 'com.google.guava:guava:31.1-jre'
-    implementation 'com.github.CST-Group:WS3DProxy:0.0.2'
+    implementation 'com.github.CST-Group:WS3DProxy:0.0.4'
 }
 
 // Apply a specific Java toolchain to ease working on different environments.

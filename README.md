@@ -38,3 +38,17 @@ to build the WS3DApp and
 ./gradlew run
 ```
 to run it. 
+
+## Features
+
+- Real-time control of the creature using the keyboard.
+- Use of the **arrow keys** for movement:
+  - **↑ (Up Arrow)**: moves the creature forward.
+  - **↓ (Down Arrow)**: moves the creature backward.
+  - **← (Left Arrow)**: rotates the creature to the left.
+  - **→ (Right Arrow)**: rotates the creature to the right.
+- Use of the **space bar** to completely stop the creature’s movement.
+- Direct integration with **WS3DProxy**, using differential wheel control commands (`move(vr, vl, w)`).
+- Keyboard event handling implemented with **Swing Key Bindings (InputMap / ActionMap)**, ensuring proper behavior regardless of component focus.
+- Simple Swing-based graphical interface for manual creature control.
+- Informative tooltips on buttons, indicating the associated action and keyboard shortcut.
