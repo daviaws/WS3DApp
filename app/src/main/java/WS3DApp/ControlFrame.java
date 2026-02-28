@@ -21,7 +21,7 @@ public class ControlFrame extends JFrame {
     private Creature creature;
 
     // UI
-    private JButton btnUp, btnDown, btnLeft, btnRight, btnCapture;
+    private JButton btnUp, btnDown, btnLeft, btnRight, btnCapture, btnEat;
     private JList<String> visionList;
     private DefaultListModel<String> visionModel;
     private JScrollPane visionScroll;
@@ -68,18 +68,21 @@ public class ControlFrame extends JFrame {
         btnLeft = new JButton("←");
         btnRight = new JButton("→");
         btnCapture = new JButton("CAPTURE");
+        btnEat = new JButton("EAT");
 
         btnUp.setFocusable(false);
         btnDown.setFocusable(false);
         btnLeft.setFocusable(false);
         btnRight.setFocusable(false);
         btnCapture.setFocusable(false);
+        btnEat.setFocusable(false);
 
         btnUp.addActionListener(e -> moveUp());
         btnDown.addActionListener(e -> moveDown());
         btnLeft.addActionListener(e -> moveLeft());
         btnRight.addActionListener(e -> moveRight());
         btnCapture.addActionListener(e -> stopAndCapture());
+        btnEat.addActionListener(e -> eatNearest());
 
         // Painel de controle (esquerda)
         JPanel controlPanel = new JPanel();
@@ -88,7 +91,15 @@ public class ControlFrame extends JFrame {
 
         gl.setHorizontalGroup(
             gl.createParallelGroup(GroupLayout.Alignment.CENTER)
-                .addComponent(btnUp)
+                .addGroup(
+                    gl.createSequentialGroup()
+                        .addContainerGap()
+                        .addGap(0, 0, Short.MAX_VALUE)
+                        .addComponent(btnUp)
+                        .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(btnEat)
+                        .addContainerGap()
+                )
                 .addGroup(
                     gl.createSequentialGroup()
                         .addComponent(btnLeft)
@@ -100,10 +111,16 @@ public class ControlFrame extends JFrame {
                 .addComponent(btnDown)
         );
 
+
+
         gl.setVerticalGroup(
             gl.createSequentialGroup()
                 .addGap(30)
-                .addComponent(btnUp)
+                .addGroup(
+                    gl.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                        .addComponent(btnUp)
+                        .addComponent(btnEat)
+                )
                 .addGap(15)
                 .addGroup(
                     gl.createParallelGroup(GroupLayout.Alignment.BASELINE)
@@ -233,7 +250,7 @@ public class ControlFrame extends JFrame {
     private void captureNearest() {
         try {
             for (Thing t : creature.getThingsInVision()) {
-                if (t.getName().startsWith("Brick")) {
+                if (t.getName().startsWith("Brick") || t.getName().contains("Food")) {
                     continue;
                 }
                 if (creature.calculateDistanceTo(t) <= CAPTURE_DISTANCE) {
@@ -241,6 +258,41 @@ public class ControlFrame extends JFrame {
                     return;
                 }
             }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private boolean hasPerishableFood(Bag bag) {
+        return bag.getNumberPFood() > 0;
+    }
+
+    private boolean hasNonPerishableFood(Bag bag) {
+        return bag.getNumberNPFood() > 0;
+    }
+
+    private void eatNearest() {
+        try {
+            Thing food = null;
+
+            for (Thing t : creature.getThingsInVision()) {
+
+                if (!t.getName().contains("Food")) {
+                    continue;
+                }
+
+                if (creature.calculateDistanceTo(t) > CAPTURE_DISTANCE) {
+                    continue;
+                }
+
+                food = t;
+            }
+
+            if (food != null) {
+                creature.eatIt(food.getName());
+                return;
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -261,6 +313,7 @@ public class ControlFrame extends JFrame {
                     case KeyEvent.VK_LEFT -> moveLeft();
                     case KeyEvent.VK_RIGHT -> moveRight();
                     case KeyEvent.VK_SPACE -> stopAndCapture();
+                    case KeyEvent.VK_E -> eatNearest();
                 }
                 return false; // não consome
             });
@@ -297,10 +350,6 @@ public class ControlFrame extends JFrame {
                     )
                 );
 
-                if (t.getName().startsWith("Brick")) {
-                    continue;
-                }
-
                 if (highlightedIndex == -1
                     && dist <= CAPTURE_DISTANCE
                     && !t.getName().startsWith("Brick")) {
@@ -326,10 +375,6 @@ public class ControlFrame extends JFrame {
             if (bag == null) return;
 
             bagModel.clear();
-
-            bagModel.addElement("Food total: " + bag.getTotalNumberFood());
-            bagModel.addElement("  Perishable: " + bag.getNumberPFood());
-            bagModel.addElement("  Non-perishable: " + bag.getNumberNPFood());
 
             bagModel.addElement("Crystals total: " + bag.getTotalNumberCrystals());
             bagModel.addElement("  RED: " + bag.getNumberCrystalPerType(Constants.colorRED));
@@ -359,5 +404,6 @@ public class ControlFrame extends JFrame {
         btnLeft.setToolTipText("Rotate left (←)");
         btnRight.setToolTipText("Rotate right (→)");
         btnCapture.setToolTipText("Capture (SPACE)");
+        btnEat.setToolTipText("Eat food (E)");
     }
 }
