@@ -24,19 +24,16 @@ public class ControlFrame extends JFrame {
     public ControlFrame(WS3DProxy proxy) {
         this.proxy = proxy;
 
-        // 1) Criar painel de visão (precisa existir antes do layout)
         initVisionPanel();
 
-        // 2) Criar layout completo
         initComponents();
 
-        // 3) Mundo / criatura
+        setupTooltips();
+
         initWorld();
 
-        // 4) Teclado GLOBAL (sem foco, sem Swing frescura)
         installGlobalKeyboard();
 
-        // 5) Timer de atualização da visão
         startVisionTimer();
 
         // Janela
@@ -112,7 +109,7 @@ public class ControlFrame extends JFrame {
             visionScroll
         );
         split.setResizeWeight(0.4);
-        split.setDividerLocation(260);
+        split.setDividerLocation(200);
 
         setContentPane(split);
     }
@@ -223,5 +220,17 @@ public class ControlFrame extends JFrame {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private void setupTooltips() {
+        ToolTipManager.sharedInstance().setInitialDelay(300);
+        ToolTipManager.sharedInstance().setReshowDelay(100);
+        ToolTipManager.sharedInstance().setDismissDelay(4000);
+
+        btnUp.setToolTipText("Move forward (↑)");
+        btnDown.setToolTipText("Move backward (↓)");
+        btnLeft.setToolTipText("Rotate left (←)");
+        btnRight.setToolTipText("Rotate right (→)");
+        btnStop.setToolTipText("Stop (SPACE)");
     }
 }

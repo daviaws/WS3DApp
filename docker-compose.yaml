@@ -1,0 +1,33 @@
+services:
+  ws3d:
+    image: brgsil/ws3d-coppelia
+    container_name: ws3d-coppelia
+    network_mode: host
+    privileged: true
+    environment:
+      - DISPLAY=${DISPLAY}
+    volumes:
+      - ${XAUTHORITY}:/root/.Xauthority:ro
+    devices:
+      - /dev/snd
+    ports:
+      - "4011:4011"
+    restart: unless-stopped
+
+  ws3d-app:
+    build: .
+    container_name: ws3d-app
+    depends_on:
+      - ws3d
+    network_mode: host
+    environment:
+      - DISPLAY=${DISPLAY}
+    volumes:
+      - .:/app
+      - ${XAUTHORITY}:/root/.Xauthority:ro
+      - gradle-cache:/root/.gradle
+    stdin_open: true
+    tty: true
+
+volumes:
+  gradle-cache:
