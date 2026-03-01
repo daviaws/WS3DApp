@@ -115,10 +115,7 @@ public class ControlFrame extends JFrame {
                     // ================= CREATE =================
 
                     case "Create Creature" -> {
-                        Creature c = proxy.createCreature(x, y, 0, ++creatureColor);
-                        c.start();
-
-                        creatures.add(c);
+                        createCreature(x, y);
                     }
 
                     case "Create Food (Apple)" -> {
@@ -450,15 +447,22 @@ public class ControlFrame extends JFrame {
             World.createBrick(3, 500, 200, 505, 300);
             World.createDeliverySpot(250, 250);
 
-            creature = proxy.createCreature(100, 450, 0);
-            creatures.add(creature);
-            activeCreatureIndex = creatures.size() - 1;
-            updateCreatureLabel();
-            creature.start();
+            creature = createCreature(100, 450);
+            alternateCreature();
 
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private Creature createCreature(double x, double y) {
+        try { 
+            Creature c = proxy.createCreature(x, y, 0, creatureColor++);
+            creatures.add(c);
+            c.start();
+        }
+        catch (Exception e) { e.printStackTrace(); }
+        return null;
     }
 
     /* ========================= MOVEMENT ========================= */
