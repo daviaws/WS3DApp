@@ -21,30 +21,6 @@ public class App {
     
     public App() {
         proxy = new WS3DProxy();
-        // try {   
-            // World world = World.getInstance();
-            // world.reset();
-        //     w = World.getInstance();
-        //     width = w.getEnvironmentWidth();
-        //     height = w.getEnvironmentHeight();
-            
-        //     w.reset();
-        //     World.createFood(0, 350, 75);
-        //     World.createFood(0, 100, 220);
-        //     World.createFood(1, 250, 210);
-        //     World.createDeliverySpot(250, 250);
-        //     World.createJewel(0, 10, 50);
-        //     World.createJewel(1, 100, 500);
-        //     World.createBrick(3, 500, 200, 505, 300);
-        //     c = proxy.createCreature(100,450,0);
-        //     c.start();
-
-        //     // c2 = proxy.createCreature(50,250,0,1);
-        //     // c2.start();
-            
-        // } catch (Exception e) {
-        //     System.out.println("Erro capturado"); 
-        // }
         cf = new ControlFrame(proxy);
         cf.setVisible(true);
     }

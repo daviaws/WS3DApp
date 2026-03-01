@@ -4,6 +4,7 @@ import java.awt.KeyboardFocusManager;
 import java.awt.event.KeyEvent;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.FlowLayout;
 import javax.swing.*;
 import ws3dproxy.WS3DProxy;
 import ws3dproxy.model.Bag;
@@ -11,14 +12,29 @@ import ws3dproxy.model.Creature;
 import ws3dproxy.model.Thing;
 import ws3dproxy.model.World;
 import ws3dproxy.util.Constants;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.DocumentFilter;
+import javax.swing.text.AbstractDocument;
+import javax.swing.text.AttributeSet;
+import javax.swing.text.BadLocationException;
+import javax.swing.text.DocumentFilter;
+import javax.swing.text.JTextComponent;
 
 public class ControlFrame extends JFrame {
     private static final double CAPTURE_DISTANCE = 25.0;
+    private static int creatureColor = 0;
     private int highlightedIndex = -1;
 
     private WS3DProxy proxy;
     private World world;
     private Creature creature;
+
+    // Creation UI
+    private JComboBox<String> comboAction;
+    private JComboBox<String> comboColor;
+    private JTextField txtX, txtY, txtX2, txtY2;
+    private JButton btnDo;
+    private JPanel actionPanel;
 
     // UI
     private JButton btnUp, btnDown, btnLeft, btnRight, btnCapture, btnEat;
@@ -38,6 +54,8 @@ public class ControlFrame extends JFrame {
 
         initBagPanel();
 
+        initActions();
+
         initComponents();
 
         setupTooltips();
@@ -52,10 +70,188 @@ public class ControlFrame extends JFrame {
 
         // Janela
         setTitle("WS3D Control");
-        setSize(620, 300);
+        setSize(620, 450);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setVisible(true);
+    }
+
+    /* ====================== Creation UI ====================== */
+
+    private void initActions() {       
+        comboAction = new JComboBox<>(new String[] {
+            "Create Creature",
+            "Create Food (Apple)",
+            "Create Food (Nut)",
+            "Create Jewel",
+            "Create Brick",
+            "Move Creature"
+        });
+
+        comboColor = new JComboBox<>(new String[] {
+            "RED", "GREEN", "BLUE", "YELLOW", "MAGENTA", "WHITE"
+        });
+
+        txtX  = new JTextField(5);
+        txtY  = new JTextField(5);
+        txtX2 = new JTextField(5);
+        txtY2 = new JTextField(5);
+
+        btnDo = new JButton("DO");
+        btnDo.setFocusable(false);
+        btnDo.addActionListener(e -> {
+            try {
+                String action = comboAction.getSelectedItem().toString();
+
+                double x = Double.parseDouble(txtX.getText());
+                double y = Double.parseDouble(txtY.getText());
+
+                switch (action) {
+
+                    // ================= CREATE =================
+
+                    case "Create Creature" -> {
+                        Creature c = proxy.createCreature(x, y, 0, ++creatureColor);
+                        c.start();
+                        creature = c; // criatura ativa
+                    }
+
+                    case "Create Food (Apple)" -> {
+                        World.createFood(0, x, y); // perishable
+                    }
+
+                    case "Create Food (Nut)" -> {
+                        World.createFood(1, x, y); // non-perishable
+                    }
+
+                    case "Create Jewel" -> {
+                        int color = comboColor.getSelectedIndex();
+                        World.createJewel(color, x, y);
+                    }
+
+                    case "Create Brick" -> {
+                        double x2 = Double.parseDouble(txtX2.getText());
+                        double y2 = Double.parseDouble(txtY2.getText());
+                        int color = comboColor.getSelectedIndex();
+                        World.createBrick(color, x, y, x2, y2);
+                    }
+
+                    // ================= MOVE =================
+
+                    case "Move Creature" -> {
+                        if (creature == null) {
+                            JOptionPane.showMessageDialog(
+                                this,
+                                "No creature created yet.",
+                                "Warning",
+                                JOptionPane.WARNING_MESSAGE
+                            );
+                            return;
+                        }
+
+                        World.getInstance().createWaypoint(x, y); // visual
+                        creature.moveto(2.0, x, y);
+                    }
+                }
+
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(
+                    this,
+                    "Invalid coordinates.",
+                    "Error",
+                    JOptionPane.ERROR_MESSAGE
+                );
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        });
+
+        comboAction.setFocusable(false);
+        comboColor.setFocusable(false);
+
+        btnDo.setFocusable(false);
+
+        // focus on text box usability
+        DocumentFilter onlyDigits = new DocumentFilter() {
+            @Override
+            public void insertString(FilterBypass fb, int offset, String string, AttributeSet attr)
+                    throws BadLocationException {
+                if (string != null && string.matches("\\d*")) {
+                    super.insertString(fb, offset, string, attr);
+                }
+            }
+
+            @Override
+            public void replace(FilterBypass fb, int offset, int length, String text, AttributeSet attrs)
+                    throws BadLocationException {
+                if (text != null && text.matches("\\d*")) {
+                    super.replace(fb, offset, length, text, attrs);
+                }
+            }
+        };
+
+        for (JTextField tf : new JTextField[]{txtX, txtY, txtX2, txtY2}) {
+            ((AbstractDocument) tf.getDocument()).setDocumentFilter(onlyDigits);
+            InputMap im = tf.getInputMap(JComponent.WHEN_FOCUSED);
+            im.put(KeyStroke.getKeyStroke("UP"), "none");
+            im.put(KeyStroke.getKeyStroke("DOWN"), "none");
+            im.put(KeyStroke.getKeyStroke("LEFT"), "none");
+            im.put(KeyStroke.getKeyStroke("RIGHT"), "none");
+            im.put(KeyStroke.getKeyStroke("SPACE"), "none");
+        }
+
+        actionPanel = new JPanel();
+        actionPanel.setLayout(new BoxLayout(actionPanel, BoxLayout.Y_AXIS));
+        actionPanel.setBorder(BorderFactory.createTitledBorder("Actions"));
+
+        /* Action */
+        actionPanel.add(new JLabel("Action"));
+        actionPanel.add(comboAction);
+        actionPanel.add(Box.createVerticalStrut(5));
+
+        /* Color row */
+        JPanel colorPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        colorPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        colorPanel.add(new JLabel("Color"));
+        colorPanel.add(comboColor);
+        colorPanel.setVisible(false);
+        actionPanel.add(colorPanel);
+        actionPanel.add(Box.createVerticalStrut(5));
+
+        /* X / Y row */
+        JPanel xyPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        xyPanel.add(new JLabel("X"));
+        xyPanel.add(txtX);
+        xyPanel.add(new JLabel("Y"));
+        xyPanel.add(txtY);
+        actionPanel.add(xyPanel);
+        actionPanel.add(Box.createVerticalStrut(5));
+
+        /* X2 / Y2 row */
+        JPanel x2y2Panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        x2y2Panel.add(new JLabel("X2"));
+        x2y2Panel.add(txtX2);
+        x2y2Panel.add(new JLabel("Y2"));
+        x2y2Panel.add(txtY2);
+        x2y2Panel.setVisible(false);
+        actionPanel.add(x2y2Panel);
+        actionPanel.add(Box.createVerticalStrut(10));
+
+        /* DO button */
+        actionPanel.add(btnDo);
+
+        comboAction.addActionListener(e -> {
+            boolean isBrick = comboAction.getSelectedItem().equals("Create Brick");
+            boolean isJewel = comboAction.getSelectedItem().equals("Create Jewel");
+
+            colorPanel.setVisible(isBrick || isJewel);
+            x2y2Panel.setVisible(isBrick);
+
+            actionPanel.revalidate();
+            actionPanel.setMinimumSize(actionPanel.getPreferredSize());
+            actionPanel.repaint();
+        });
     }
 
     /* ========================= UI ========================= */
@@ -141,9 +337,16 @@ public class ControlFrame extends JFrame {
         );
         rightSplit.setResizeWeight(0.6);
 
+        JSplitPane leftSplit = new JSplitPane(
+            JSplitPane.VERTICAL_SPLIT,
+            controlPanel,
+            actionPanel
+        );
+        leftSplit.setResizeWeight(0.0);
+
         JSplitPane mainSplit = new JSplitPane(
             JSplitPane.HORIZONTAL_SPLIT,
-            controlPanel,
+            leftSplit,
             rightSplit
         );
 

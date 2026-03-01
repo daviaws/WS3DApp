@@ -12,7 +12,6 @@ services:
       - /dev/snd
     ports:
       - "4011:4011"
-    restart: unless-stopped
 
   ws3d-app:
     build: .
