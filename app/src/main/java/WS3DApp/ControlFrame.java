@@ -5,6 +5,7 @@ import java.awt.event.KeyEvent;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.FlowLayout;
+import java.awt.Font;
 import javax.swing.*;
 import ws3dproxy.WS3DProxy;
 import ws3dproxy.model.Bag;
@@ -27,6 +28,8 @@ public class ControlFrame extends JFrame {
 
     private WS3DProxy proxy;
     private World world;
+    private java.util.List<Creature> creatures = new java.util.ArrayList<>();
+    private int activeCreatureIndex = -1;
     private Creature creature;
 
     // Creation UI
@@ -37,7 +40,8 @@ public class ControlFrame extends JFrame {
     private JPanel actionPanel;
 
     // UI
-    private JButton btnUp, btnDown, btnLeft, btnRight, btnCapture, btnEat;
+    private JLabel lblCurrentCreature;
+    private JButton btnUp, btnDown, btnLeft, btnRight, btnCapture, btnEat, btnAlternateCreature;
     private JList<String> visionList;
     private DefaultListModel<String> visionModel;
     private JScrollPane visionScroll;
@@ -113,7 +117,8 @@ public class ControlFrame extends JFrame {
                     case "Create Creature" -> {
                         Creature c = proxy.createCreature(x, y, 0, ++creatureColor);
                         c.start();
-                        creature = c; // criatura ativa
+
+                        creatures.add(c);
                     }
 
                     case "Create Food (Apple)" -> {
@@ -256,8 +261,21 @@ public class ControlFrame extends JFrame {
 
     /* ========================= UI ========================= */
 
-    private void initComponents() {
+    private void updateCreatureLabel() {
+        if (creature == null) {
+            lblCurrentCreature.setText("Current Creature: -");
+        } else {
+            lblCurrentCreature.setText(
+                "Current Creature: #" + activeCreatureIndex
+            );
+        }
+    }
 
+    private void initComponents() {
+        lblCurrentCreature = new JLabel("Current Creature: -");
+        lblCurrentCreature.setHorizontalAlignment(SwingConstants.CENTER);
+        lblCurrentCreature.setFont(lblCurrentCreature.getFont().deriveFont(Font.BOLD));
+        
         // Botões
         btnUp = new JButton("↑");
         btnDown = new JButton("↓");
@@ -265,6 +283,7 @@ public class ControlFrame extends JFrame {
         btnRight = new JButton("→");
         btnCapture = new JButton("CAPTURE");
         btnEat = new JButton("EAT");
+        btnAlternateCreature = new JButton("Alt");
 
         btnUp.setFocusable(false);
         btnDown.setFocusable(false);
@@ -272,6 +291,7 @@ public class ControlFrame extends JFrame {
         btnRight.setFocusable(false);
         btnCapture.setFocusable(false);
         btnEat.setFocusable(false);
+        btnAlternateCreature.setFocusable(false);
 
         btnUp.addActionListener(e -> moveUp());
         btnDown.addActionListener(e -> moveDown());
@@ -279,6 +299,7 @@ public class ControlFrame extends JFrame {
         btnRight.addActionListener(e -> moveRight());
         btnCapture.addActionListener(e -> stopAndCapture());
         btnEat.addActionListener(e -> eatNearest());
+        btnAlternateCreature.addActionListener(e -> alternateCreature());
 
         // Painel de controle (esquerda)
         JPanel controlPanel = new JPanel();
@@ -287,6 +308,7 @@ public class ControlFrame extends JFrame {
 
         gl.setHorizontalGroup(
             gl.createParallelGroup(GroupLayout.Alignment.CENTER)
+                .addComponent(lblCurrentCreature)
                 .addGroup(
                     gl.createSequentialGroup()
                         .addContainerGap()
@@ -304,13 +326,22 @@ public class ControlFrame extends JFrame {
                         .addGap(10)
                         .addComponent(btnRight)
                 )
-                .addComponent(btnDown)
+                .addGroup(
+                    gl.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(btnAlternateCreature)
+                        .addPreferredGap(LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(btnDown)
+                        .addGap(0, 0, Short.MAX_VALUE)
+                        .addContainerGap()
+                )
         );
-
 
 
         gl.setVerticalGroup(
             gl.createSequentialGroup()
+                .addGap(10)
+                .addComponent(lblCurrentCreature)
                 .addGap(30)
                 .addGroup(
                     gl.createParallelGroup(GroupLayout.Alignment.BASELINE)
@@ -325,7 +356,11 @@ public class ControlFrame extends JFrame {
                         .addComponent(btnRight)
                 )
                 .addGap(15)
-                .addComponent(btnDown)
+                .addGroup(
+                    gl.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                        .addComponent(btnAlternateCreature)
+                        .addComponent(btnDown)
+                )
                 .addGap(30)
         );
 
@@ -416,6 +451,9 @@ public class ControlFrame extends JFrame {
             World.createDeliverySpot(250, 250);
 
             creature = proxy.createCreature(100, 450, 0);
+            creatures.add(creature);
+            activeCreatureIndex = creatures.size() - 1;
+            updateCreatureLabel();
             creature.start();
 
         } catch (Exception e) {
@@ -505,6 +543,17 @@ public class ControlFrame extends JFrame {
         }
     }
 
+    private void alternateCreature() {
+        if (creatures.isEmpty()) return;
+
+        activeCreatureIndex = (activeCreatureIndex + 1) % creatures.size();
+        creature = creatures.get(activeCreatureIndex);
+
+        updateCreatureLabel();
+
+        System.out.println("Active creature index: " + activeCreatureIndex);
+    }
+
     /* ========================= KEYBOARD (GLOBAL, SEM FOCO) ========================= */
 
     private void installGlobalKeyboard() {
@@ -515,6 +564,7 @@ public class ControlFrame extends JFrame {
                 if (e.getID() != KeyEvent.KEY_PRESSED) return false;
 
                 switch (e.getKeyCode()) {
+                    case KeyEvent.VK_A -> alternateCreature();
                     case KeyEvent.VK_UP -> moveUp();
                     case KeyEvent.VK_DOWN -> moveDown();
                     case KeyEvent.VK_LEFT -> moveLeft();
@@ -613,5 +663,6 @@ public class ControlFrame extends JFrame {
         btnRight.setToolTipText("Rotate right (→)");
         btnCapture.setToolTipText("Capture (SPACE)");
         btnEat.setToolTipText("Eat food (E)");
+        btnAlternateCreature.setToolTipText("Alternate Creature (A)");
     }
 }

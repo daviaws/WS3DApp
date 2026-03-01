@@ -43,4 +43,5 @@ docker compose up
 - Bricks and DeliverySpots cannot be captured nor highlighted at all.
 - Food cannot be captured as WS3D have the resource but the Proxy don't work well with food in backpack.
 - Food can be highlighted and eat with E button or in the interface.
-- Add **Action Panel** to Create Creature, Food, Jewel and Brick, or to Move to.  
+- Add **Action Panel** to Create Creature, Food, Jewel and Brick, or to Move to.
+- Add Alternate button and label to show current creature controlled.
