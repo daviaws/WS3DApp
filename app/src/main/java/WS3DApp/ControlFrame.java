@@ -2,6 +2,8 @@ package WS3DApp;
 
 import java.awt.KeyboardFocusManager;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.FlowLayout;
@@ -10,6 +12,7 @@ import javax.swing.*;
 import ws3dproxy.WS3DProxy;
 import ws3dproxy.model.Bag;
 import ws3dproxy.model.Creature;
+import ws3dproxy.model.Leaflet;
 import ws3dproxy.model.Thing;
 import ws3dproxy.model.World;
 import ws3dproxy.util.Constants;
@@ -51,12 +54,19 @@ public class ControlFrame extends JFrame {
     private JScrollPane bagScroll;
     private Timer bagTimer;
 
+    // Leaftlet UI
+    private DefaultListModel<Leaflet> leafletModel;
+    private JList<Leaflet> leafletList;
+    private JScrollPane leafletScroll;
+
     public ControlFrame(WS3DProxy proxy) {
         this.proxy = proxy;
 
         initVisionPanel();
 
         initBagPanel();
+
+        initLeafletPanel();
 
         initActions();
 
@@ -74,7 +84,7 @@ public class ControlFrame extends JFrame {
 
         // Janela
         setTitle("WS3D Control");
-        setSize(620, 450);
+        setSize(680, 450);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setVisible(true);
@@ -256,6 +266,130 @@ public class ControlFrame extends JFrame {
         });
     }
 
+    /* ====================== Leaflet UI ====================== */
+
+    private void initLeafletPanel() {
+        leafletModel = new DefaultListModel<>();
+        leafletList = new JList<>(leafletModel);
+        leafletList.setFocusable(false);
+
+        leafletList.setBorder(
+            BorderFactory.createTitledBorder("Leaflets")
+        );
+
+        leafletList.setCellRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(
+                    JList<?> list, Object value, int index,
+                    boolean isSelected, boolean cellHasFocus) {
+
+                JLabel label = (JLabel) super.getListCellRendererComponent(
+                    list, value, index, isSelected, cellHasFocus
+                );
+
+                Leaflet l = (Leaflet) value;
+
+                label.setText(formatLeaflet(l));
+
+                // visual feedback
+                if (l.isCompleted()) {
+                    label.setForeground(new Color(0, 130, 0)); // green
+                } else {
+                    label.setForeground(Color.GRAY);
+                }
+
+                return label;
+            }
+        });
+
+        leafletList.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    Leaflet selected = leafletList.getSelectedValue();
+                    if (selected != null) {
+                        tryDeliverLeaflet(selected);
+                    }
+                }
+            }
+        });
+
+        leafletScroll = new JScrollPane(leafletList);
+    }
+
+    private String formatLeaflet(Leaflet l) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("L").append(l.getID()).append(" (");
+
+        boolean first = true;
+        for (String type : l.getItems().keySet()) {
+
+            int total = l.getTotalNumberOfType(type);
+            int collected = l.getCollectedNumberOfType(type);
+            int missing = l.getMissingNumberOfType(type);
+
+            String shortType = type.substring(0, 1);
+
+            if (!first) sb.append(", ");
+
+            if (missing == 0 && total > 0) {
+                sb.append(shortType).append(": OK");
+            } else {
+                sb.append(shortType)
+                .append(": ")
+                .append(collected)
+                .append("/")
+                .append(total);
+            }
+
+            first = false;
+        }
+
+        sb.append(") : ").append(l.getPayment()).append("P");
+
+        return sb.toString();
+    }
+
+    private void tryDeliverLeaflet(Leaflet l) {
+        if (!l.isCompleted()) {
+            JOptionPane.showMessageDialog(
+                this,
+                "Insufficient material to complete this leaflet.",
+                "Cannot Deliver",
+                JOptionPane.WARNING_MESSAGE
+            );
+            return;
+        }
+
+        try {
+            creature.deliverLeaflet(l.getID().toString());
+            creature.updateState();
+            updateLeaflets();
+            updateBag();
+            creature.getScore();
+
+            JOptionPane.showMessageDialog(
+                this,
+                "Leaflet delivered! +" + l.getPayment() + " points",
+                "Success",
+                JOptionPane.INFORMATION_MESSAGE
+            );
+
+        } catch (Exception ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private void updateLeaflets() {
+        if (creature == null) return;
+
+        leafletModel.clear();
+        for (Leaflet l : creature.getLeaflets()) {
+            leafletModel.addElement(l);
+        }
+    }
+
     /* ========================= UI ========================= */
 
     private void updateCreatureLabel() {
@@ -362,12 +496,17 @@ public class ControlFrame extends JFrame {
         );
 
         // SplitPane
+        JPanel bagAndLeafletPanel = new JPanel();
+        bagAndLeafletPanel.setLayout(new BoxLayout(bagAndLeafletPanel, BoxLayout.Y_AXIS));
+        bagAndLeafletPanel.add(bagScroll);
+        bagAndLeafletPanel.add(leafletScroll);
+
         JSplitPane rightSplit = new JSplitPane(
             JSplitPane.HORIZONTAL_SPLIT,
             visionScroll,
-            bagScroll
+            bagAndLeafletPanel
         );
-        rightSplit.setResizeWeight(0.6);
+        rightSplit.setResizeWeight(0.5);
 
         JSplitPane leftSplit = new JSplitPane(
             JSplitPane.VERTICAL_SPLIT,
@@ -444,6 +583,17 @@ public class ControlFrame extends JFrame {
             World.createFood(0, 350, 75);
             World.createFood(0, 100, 220);
             World.createJewel(0, 10, 50);
+            World.createJewel(0, 10, 50);
+            World.createJewel(1, 10, 51);
+            World.createJewel(1, 10, 52);
+            World.createJewel(2, 10, 52);
+            World.createJewel(2, 10, 53);
+            World.createJewel(3, 11, 54);
+            World.createJewel(3, 11, 55);
+            World.createJewel(4, 12, 55);
+            World.createJewel(4, 12, 56);
+            World.createJewel(5, 12, 57);
+            World.createJewel(5, 12, 58);
             World.createBrick(3, 500, 200, 505, 300);
             World.createDeliverySpot(250, 250);
 
@@ -460,6 +610,7 @@ public class ControlFrame extends JFrame {
             Creature c = proxy.createCreature(x, y, 0, creatureColor++);
             creatures.add(c);
             c.start();
+            return c;
         }
         catch (Exception e) { e.printStackTrace(); }
         return null;
@@ -633,6 +784,7 @@ public class ControlFrame extends JFrame {
         if (creature == null) return;
 
         try {
+            updateLeaflets();
             Bag bag = creature.updateBag();
             if (bag == null) return;
 
